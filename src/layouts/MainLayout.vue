@@ -91,6 +91,11 @@ const linksData = [
     caption: 'Community Quasar projects',
     icon: 'favorite',
     link: 'https://awesome.quasar.dev'
+  },{
+    title: 'Baidu Map',
+    caption: '',
+    icon: 'public',
+    link: 'http://lbsyun.baidu.com/index.php?title=jspopular3.0'
   }
 ];
 
