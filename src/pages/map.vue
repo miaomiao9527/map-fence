@@ -10,20 +10,9 @@
     name:'mapProject',
     data () {
       return{
-        alarmArea:[]
-      };
-    },
-    mounted(){
-      this.init()
-    },
-    components: {
-
-    },
-    methods: {
-      init(){
-        const map = new BMap.Map("container");
-        map.centerAndZoom(new BMap.Point(116.404, 39.915), 15);
-        const styleOptions = {
+        alarmArea:[],
+        map:undefined,
+        styleOptions: {
           strokeColor:"red",    //边线颜色。
           fillColor:"red",      //填充颜色。当参数为空时，圆形将没有填充效果。
           strokeWeight: 3,       //边线的宽度，以像素为单位。
@@ -31,8 +20,36 @@
           fillOpacity: 0.6,      //填充的透明度，取值范围0 - 1。
           strokeStyle: 'solid' //边线的样式，solid或dashed。
         }
+      };
+    },
+    mounted(){
+      this.init()
+    },
+    beforeDestroy(){
+      const overlay =JSON.stringify(this.alarmArea);
+      localStorage.setItem('overlay', overlay)
+    },
+    components: {
 
-        const drawingManager = new BMapLib.DrawingManager(map, {
+    },
+    methods: {
+      // 初始化
+      init(){
+        const overlay =localStorage.getItem("overlay")
+        debugger
+        if(overlay){
+            this.alarmArea = JSON.parse(overlay);
+            this.initMap();
+            this.updateOverlay()
+          }else{
+            this.initMap()
+          }
+      },
+      initMap(){
+        this.map = new BMap.Map("container");
+        this.map.centerAndZoom(new BMap.Point(116.404, 39.915), 15);
+
+        const drawingManager = new BMapLib.DrawingManager(this.map, {
           isOpen: false, //是否开启绘制模式
           enableDrawingTool: true, //是否显示工具栏
           drawingToolOptions: {
@@ -40,11 +57,43 @@
             offset: new BMap.Size(5, 5), //偏离值
             drawingModes:[BMAP_DRAWING_CIRCLE,BMAP_DRAWING_POLYGON],// 绘图模式
           },
-          circleOptions: styleOptions, //圆的样式
-          // polylineOptions: styleOptions, //线的样式
-          polygonOptions: styleOptions, //多边形的样式
-          // rectangleOptions: styleOptions //矩形的样式
+          circleOptions: this.styleOptions, //圆的样式
+          polygonOptions: this.styleOptions, //多边形的样式
         });
+        drawingManager.enableCalculate()
+        drawingManager.addEventListener('overlaycomplete', this.overlaycomplete);
+      },
+      // 绘制完成
+      overlaycomplete(e){
+        const {overlay,drawingMode} =e
+        let target={}
+        if(drawingMode==='polygon'){
+          const path=overlay.getPath()
+          target={path,drawingMode}
+        }else{
+          const {point,Fa} =overlay
+          console.log(point.lat)
+          target={point,drawingMode,radius:Fa}
+        }
+        this.alarmArea.push(target)
+        localStorage.setItem('overlay',JSON.stringify(target))
+      },
+      // 自定义绘制overlay
+      updateOverlay(){
+        const overlayList=this.alarmArea.map(item=>this.getOverlay(item))
+        overlayList.forEach(overlayItem=>{
+          this.map.addOverlay(overlayItem);
+        })
+      },
+      //获取overlay
+      getOverlay(data){
+        const {drawingMode} =data;
+        if(drawingMode==='polygon'){
+          const pontList=data.path.map(item=>new BMap.Point(item.lng, item.lat),)
+          return new BMap.Polygon(pontList,this.styleOptions)
+        }else{
+          return new BMap.Circle(data.point,data.radius,this.styleOptions)
+        }
       }
     }
   }
@@ -53,7 +102,7 @@
 <style lang='scss' scoped>
  #container{
    width: 100%;
-   height: 100vh;
+   height: calc(100vh - 50px);
    overflow: auto;
  }
 </style>
