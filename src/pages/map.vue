@@ -3,26 +3,40 @@
     <div id="container"></div>
     <q-dialog v-model="visible" persistent no-esc-dismiss>
       <div>
-        <alarmForm @onSubmit="saveAlarmInfo" @cancelEdit="cancelEdit" :id="drawingOverlayId"/>
+        <alarmForm
+          @onSubmit="saveAlarmInfo"
+          @cancelEdit="cancelEdit"
+          :id="drawingOverlayId"
+        />
       </div>
     </q-dialog>
-    <q-card class="list-wrapper" v-if="alarmOverlayList.length>0">
+    <q-card class="list-wrapper" v-if="hasInfoAlarmOverlayList.length > 0">
       <div class="title">报警区域列表</div>
       <div
         class="list-item"
-        v-for="(item, index) in alarmOverlayList"
-        :key="`item_${index}`"
+        v-for="(item, index) in hasInfoAlarmOverlayList"
+        :key="item.id"
       >
-        {{ index + 1 }}-报警区域名称:{{ item.info?item.info.alarmName:'-' }} 编号:{{
-          item.info?item.info.alarmNo:'-'
+        {{ index + 1 }}-报警区域名称:{{
+          item.info ? item.info.alarmName : "-"
         }}
+        编号:{{ item.info ? item.info.alarmNo : "-" }}
       </div>
     </q-card>
-    <q-card class="search-wrapper">
-      经度: <input v-model="point.lng" type="text"/>
-      纬度: <input v-model="point.lat" type="text"/>
-		 <button @click="searchPoint">查询</button>
+    <q-card :class="['search-wrapper', {'gt-xs':showSearchFlag}]">
+      <div class="flex">
+        <label for="">经度:</label>
+        <input v-model="point.lng" type="text" />
+      </div>
+      <div class="flex">
+        <label for="">纬度:</label> <input v-model="point.lat" type="text" />
+      </div>
+      <button @click="searchPoint">查询</button>
     </q-card>
+   <q-page-sticky position="bottom-right" :offset="[18, 18]" class="xs">
+            <q-btn fab  color="amber" text-color="black" icon="search" direction="left" @click="showSearchFlag=!showSearchFlag" />
+          </q-page-sticky>
+
   </q-page>
 </template>
 
@@ -33,7 +47,6 @@ export default {
   name: "mapProject",
   data() {
     return {
-
       alarmOverlayList: [], // 包含overlay的数组
       map: undefined,
       styleOptions: {
@@ -47,11 +60,11 @@ export default {
       visible: false, // 表单对话框
       drawingOverlayId: undefined, // 新绘制覆盖层的id
       drawingManager: undefined, // 绘制
-      point:{
-        lng:'',
-        lat:''
-      }
-
+      point: {
+        lng: "",
+        lat: "",
+      },
+      showSearchFlag: false
     };
   },
   mounted() {
@@ -60,7 +73,11 @@ export default {
   components: {
     alarmForm,
   },
-  computed: {},
+  computed: {
+    hasInfoAlarmOverlayList(){
+      return this.alarmOverlayList.filter(item=>item.info)
+    }
+  },
   methods: {
     // 初始化
     init() {
@@ -94,7 +111,10 @@ export default {
       );
     },
     // 绘制完成
-    overlaycomplete(e){
+    overlaycomplete(e) {
+      if(window.width<768){
+        return
+      }
       const { overlay, drawingMode } = e;
       this.drawingManager.close();
       let target = {};
@@ -154,12 +174,12 @@ export default {
       localStorage.setItem("overlay_info", JSON.stringify(storageList));
     },
     // 取消编辑
-    cancelEdit(){
+    cancelEdit() {
       const index = this.alarmOverlayList.findIndex(
         (e) => e.id === this.drawingOverlayId
       );
-      const {overlay} = this.alarmOverlayList[index];
-      this.alarmOverlayList.splice(index, 1)
+      const { overlay } = this.alarmOverlayList[index];
+      this.alarmOverlayList.splice(index, 1);
       this.map.removeOverlay(overlay);
       this.visible = false;
     },
@@ -168,14 +188,18 @@ export default {
       this.$q
         .dialog({
           title: "Confirm",
-          message: `确定要删除${info.info.alarmNo}-${info.info.alarmName}报警区域吗？`,
+          message: info.info
+            ? `确定要删除${info.info.alarmNo}-${info.info.alarmName}报警区域吗？`
+            : "确定删除该报警区域吗？",
           color: "negative",
           ok: "确定",
           cancel: "取消",
         })
         .onOk(() => {
           this.map.removeOverlay(e.target);
-          const index = this.alarmOverlayList.findIndex((item) => item.id === info.id);
+          const index = this.alarmOverlayList.findIndex(
+            (item) => item.id === info.id
+          );
           this.alarmOverlayList.splice(index, 1);
           const storageList = this.alarmOverlayList.map((item) => {
             const { overlay, ...other } = item;
@@ -185,40 +209,41 @@ export default {
         });
     },
 
-    searchPoint(){
-      const point =new BMap.Point(this.point.lng,this.point.lat)
-      let inOverlay = []
-      let message ='';
-      this.alarmOverlayList.forEach((item)=>{
-        const {drawingMode,overlay } = item;
+    searchPoint() {
+      const point = new BMap.Point(this.point.lng, this.point.lat);
+      let inOverlay = [];
+      let message = "";
+      this.alarmOverlayList.forEach((item) => {
+        const { drawingMode, overlay } = item;
         let isIn;
         switch (drawingMode) {
-          case 'polygon':
-            isIn=BMapLib.GeoUtils.isPointInPolygon(point, overlay)
+          case "polygon":
+            isIn = BMapLib.GeoUtils.isPointInPolygon(point, overlay);
             break;
-          case 'circle':
-            isIn=BMapLib.GeoUtils.isPointInCircle(point, overlay)
+          case "circle":
+            isIn = BMapLib.GeoUtils.isPointInCircle(point, overlay);
             break;
           default:
             break;
         }
-        if(isIn){
-          inOverlay.push(`${item.info.alarmNo}-${item.info.alarmName}`)
+        if (isIn) {
+          inOverlay.push(`${item.info.alarmNo}-${item.info.alarmName}`);
         }
-      })
-      if(inOverlay.length>0){
-        message =`坐标：经度${this.point.lng}纬度${this.point.lat}的点在以下报警区域：${inOverlay.join(',')}`
-      }else{
-        message ='未在报警区域内'
+      });
+      if (inOverlay.length > 0) {
+        message = `坐标：经度${this.point.lng}纬度${
+          this.point.lat
+        }的点在以下报警区域：${inOverlay.join(",")}`;
+      } else {
+        message = "未在报警区域内";
       }
       this.$q.dialog({
-        title:'查询结果',
+        title: "查询结果",
         message,
-        ok:'确定'
-      })
-    }
+        ok: "确定",
+      });
+    },
   },
-
 };
 </script>
 
@@ -232,9 +257,9 @@ export default {
   }
   .list-wrapper {
     position: absolute;
-    top: calc((100vh - 50px) / 2);
+    top: calc(30vh - 50px);
     right: 20px;
-    height: calc((100vh - 50px) * 0.8);
+    max-height:30vh;
     transform: translate(0, -50%);
     padding: 20px 30px;
     overflow: auto;
@@ -243,23 +268,49 @@ export default {
     }
     .list-item {
       margin-bottom: 5px;
+      font-size: 0.28rem;
       &:last-child {
         margin-bottom: 0;
       }
     }
   }
-  .search-wrapper{
+  .search-wrapper {
     position: absolute;
-    top:20px;
-    left:20%;
-    transform: translate(-50%,0);
+    bottom: 20px;
+    left: 50%;
+    transform: translate(-50%, 0);
     border-radius: 10px;
     padding: 10px;
-    background:#fff;
+    background: #fff;
     display: flex;
     align-items: center;
-    input{
-      margin:0 5px;
+    font-size: 16px;
+    label {
+      line-height: 38px;
+    }
+    input {
+      margin: 5px;
+    }
+    @media all and (max-width: 1100px) {
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      & > * {
+        flex: 1 1 100%;
+        input {
+          flex: 1 1 100%;
+          border: 1px solid #aaa;
+        }
+        label {
+          line-height: 1.1em;
+        }
+      }
+      button {
+        margin: 5px;
+      }
+    }
+    @media all and (max-width:599px){
+      bottom: 70px;
     }
   }
 }

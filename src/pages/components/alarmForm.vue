@@ -1,28 +1,30 @@
 <template>
     <q-form
       @submit="onSubmit"
-      @reset="onReset"
-      class="q-gutter-md"
+      class="q-gutter-md q-pa-md"
     >
       <q-input
         filled
         v-model="formData.alarmName"
         label="区域名称"
+        :rules="[ val => val && val.length > 0 || '请输入']"
 
       />
 			<q-input
         filled
         v-model="formData.alarmNo"
         label="区域编号"
+        :rules="[ val => val && val.length > 0  || '请输入']"
       />
 			<q-input
         filled
         v-model="formData.alarmDesc"
         label="区域描述"
+        :rules="[ val => val && val.length > 0 || '请输入']"
       />
       <div>
         <q-btn label="确定" type="submit" color="primary"/>
-        <q-btn label="取消" type="reset" color="primary" flat class="q-ml-sm" />
+        <q-btn label="取消" @click="onReset" color="primary" flat class="q-ml-sm" />
       </div>
 		</q-form>
 </template>
