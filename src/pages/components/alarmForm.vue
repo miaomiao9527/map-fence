@@ -8,15 +8,12 @@
         filled
         v-model="formData.alarmName"
         label="区域名称"
-        lazy-rules
-        :rules="[ val => val && val.length > 0 || '请输入区域名称']"
+
       />
 			<q-input
         filled
         v-model="formData.alarmNo"
         label="区域编号"
-        lazy-rules
-        :rules="[ val => val && val.length > 0 || '请输入区域编号']"
       />
 			<q-input
         filled
@@ -25,7 +22,7 @@
       />
       <div>
         <q-btn label="确定" type="submit" color="primary"/>
-        <q-btn label="重置" type="cancel" color="primary" flat class="q-ml-sm" />
+        <q-btn label="取消" type="reset" color="primary" flat class="q-ml-sm" />
       </div>
 		</q-form>
 </template>
@@ -46,7 +43,7 @@
         this.$emit('onSubmit',this.formData)
       },
 			onReset(){
-        this.$emit('cancel')
+        this.$emit('cancelEdit')
       }
     },
     props:{

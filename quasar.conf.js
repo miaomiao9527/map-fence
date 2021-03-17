@@ -67,7 +67,8 @@ module.exports = function (/* ctx */) {
         }),
           (cfg.externals = {
             ...cfg.externals,
-            BMap: "BMap"
+            BMap: "BMap",
+            BMapLib:'BMapLib'
           });
       }
     },
