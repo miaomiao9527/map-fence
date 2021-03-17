@@ -1,6 +1,6 @@
 # map-fence (map-fence)
 
-map-fence demo 
+map-fence demo
 
 ## Install the dependencies
 ```bash
@@ -24,3 +24,6 @@ quasar build
 
 ### Customize the configuration
 See [Configuring quasar.conf.js](https://quasar.dev/quasar-cli/quasar-conf-js).
+
+#### map 地图页
+删除：右键点击报警区域删除该报警区域。
