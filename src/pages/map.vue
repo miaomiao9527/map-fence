@@ -34,7 +34,7 @@
       <button @click="searchPoint">查询</button>
     </q-card>
    <q-page-sticky position="bottom-right" :offset="[18, 18]" class="xs">
-            <q-btn fab  color="amber" text-color="black" icon="search" direction="left" @click="showSearchFlag=!showSearchFlag" />
+            <q-btn fab  color="blue-5" text-color="grey-1" icon="search" direction="left" @click="showSearchFlag=!showSearchFlag" />
           </q-page-sticky>
 
   </q-page>
