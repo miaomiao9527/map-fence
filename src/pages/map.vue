@@ -268,7 +268,6 @@ export default {
     }
     .list-item {
       margin-bottom: 5px;
-      font-size: 0.28rem;
       &:last-child {
         margin-bottom: 0;
       }
