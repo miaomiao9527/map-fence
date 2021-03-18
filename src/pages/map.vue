@@ -13,7 +13,7 @@
     <q-card class="list-wrapper" v-if="hasInfoAlarmOverlayList.length > 0">
       <div class="title">报警区域列表</div>
       <div
-        class="list-item"
+        class="list-item flex"
         v-for="(item, index) in hasInfoAlarmOverlayList"
         :key="item.id"
       >
@@ -21,6 +21,7 @@
           item.info ? item.info.alarmName : "-"
         }}
         编号:{{ item.info ? item.info.alarmNo : "-" }}
+        <q-btn size="xs" icon="delete" @click="deleteOverlay(item)" round outline text-color="blue-5" flat></q-btn>
       </div>
     </q-card>
     <q-card :class="['search-wrapper', {'gt-xs':showSearchFlag}]">
@@ -92,8 +93,12 @@ export default {
     },
     // 地图及控件初始化
     initMap() {
+
       this.map = new BMap.Map("container");
       this.map.centerAndZoom(new BMap.Point(116.404, 39.915), 15);
+      if(window.screen.width<768){
+        this.map.addEventListener('click',this.onMapClick)
+      }
       this.drawingManager = new BMapLib.DrawingManager(this.map, {
         isOpen: false, //是否开启绘制模式
         enableDrawingTool: true, //是否显示工具栏
@@ -110,9 +115,20 @@ export default {
         this.overlaycomplete
       );
     },
+    //移动端添加点击事件
+    onMapClick(e){
+      const {point}=e
+      const overlay =new BMap.Marker(point)
+      this.map.addOverlay(overlay)
+      const id = getfakeId();
+      this.drawingOverlayId = id; // 新绘制的覆盖层的id
+      const target ={point,overlay,drawingMode:'marker',id}
+      this.alarmOverlayList.push(target);
+      this.visible = true;
+    },
     // 绘制完成
     overlaycomplete(e) {
-      if(window.width<768){
+      if(window.screen.width<768){
         return
       }
       const { overlay, drawingMode } = e;
@@ -124,11 +140,11 @@ export default {
         const path = overlay.getPath();
         target = { path, drawingMode, id, overlay };
       } else {
-        const { point, Fa } = overlay;
-        target = { point, drawingMode, radius: Fa, id, overlay };
+        const { point} = overlay;
+        target = { point, drawingMode, radius: overlay.getRadius(), id, overlay };
       }
-      overlay.addEventListener("rightclick", (e) =>
-        this.deleteOverlay(e, target)
+      overlay.addEventListener("rightclick", () =>
+        this.deleteOverlay(target)
       );
       this.alarmOverlayList.push(target);
       this.visible = true;
@@ -137,9 +153,11 @@ export default {
     updateOverlay() {
       this.alarmOverlayList = this.alarmOverlayList.map((item) => {
         const overlay = this.getOverlay(item);
-        overlay.addEventListener("rightclick", (e) =>
-          this.deleteOverlay(e, item)
-        );
+        if(window.screen.width>768){
+          overlay.addEventListener("rightclick", () =>
+            this.deleteOverlay( item)
+          );
+        }
         return { ...item, overlay };
       });
       this.alarmOverlayList.forEach((overlayItem) => {
@@ -154,8 +172,10 @@ export default {
           (item) => new BMap.Point(item.lng, item.lat)
         );
         return new BMap.Polygon(pointList, this.styleOptions);
-      } else {
-        return new BMap.Circle(data.point, data.radius, this.styleOptions);
+      } else if(drawingMode==='circle') {
+        return new BMap.Circle(new BMap.point(data.point), data.radius, this.styleOptions);
+      }else{
+        return new BMap.Marker(new BMap.point(data.point))
       }
     },
     // 保存报警信息
@@ -184,7 +204,7 @@ export default {
       this.visible = false;
     },
     // 删除overlay
-    deleteOverlay(e, info) {
+    deleteOverlay(info) {
       this.$q
         .dialog({
           title: "Confirm",
@@ -196,7 +216,7 @@ export default {
           cancel: "取消",
         })
         .onOk(() => {
-          this.map.removeOverlay(e.target);
+          this.map.removeOverlay(info.overlay);
           const index = this.alarmOverlayList.findIndex(
             (item) => item.id === info.id
           );
@@ -210,7 +230,7 @@ export default {
     },
 
     searchPoint() {
-      const point = new BMap.Point(this.point.lng, this.point.lat);
+      const Point = new BMap.Point(this.point.lng, this.point.lat);
       let inOverlay = [];
       let message = "";
       this.alarmOverlayList.forEach((item) => {
@@ -218,10 +238,13 @@ export default {
         let isIn;
         switch (drawingMode) {
           case "polygon":
-            isIn = BMapLib.GeoUtils.isPointInPolygon(point, overlay);
+            isIn = BMapLib.GeoUtils.isPointInPolygon(Point, overlay);
             break;
           case "circle":
-            isIn = BMapLib.GeoUtils.isPointInCircle(point, overlay);
+            isIn = BMapLib.GeoUtils.isPointInCircle(Point, overlay);
+            break;
+          case "marker":
+            isIn = this.point.lng===`${item.point.lng}`&&this.point.lat===`${item.point.lat}`
             break;
           default:
             break;
@@ -268,6 +291,7 @@ export default {
     }
     .list-item {
       margin-bottom: 5px;
+      align-items: center;
       &:last-child {
         margin-bottom: 0;
       }
