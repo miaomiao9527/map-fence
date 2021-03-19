@@ -93,7 +93,6 @@ export default {
     },
     // 地图及控件初始化
     initMap() {
-
       this.map = new BMap.Map("container");
       this.map.centerAndZoom(new BMap.Point(116.404, 39.915), 15);
       if(window.screen.width<768){
@@ -173,9 +172,9 @@ export default {
         );
         return new BMap.Polygon(pointList, this.styleOptions);
       } else if(drawingMode==='circle') {
-        return new BMap.Circle(new BMap.Point(data.point), data.radius, this.styleOptions);
+        return new BMap.Circle(new BMap.Point(data.point.lng,data.point.lat), data.radius, this.styleOptions);
       }else{
-        return new BMap.Marker(new BMap.Point(data.point))
+        return new BMap.Marker(new BMap.Point(data.point.lng,data.point.lat))
       }
     },
     // 保存报警信息
