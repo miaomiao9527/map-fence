@@ -173,9 +173,9 @@ export default {
         );
         return new BMap.Polygon(pointList, this.styleOptions);
       } else if(drawingMode==='circle') {
-        return new BMap.Circle(new BMap.point(data.point), data.radius, this.styleOptions);
+        return new BMap.Circle(new BMap.Point(data.point), data.radius, this.styleOptions);
       }else{
-        return new BMap.Marker(new BMap.point(data.point))
+        return new BMap.Marker(new BMap.Point(data.point))
       }
     },
     // 保存报警信息
